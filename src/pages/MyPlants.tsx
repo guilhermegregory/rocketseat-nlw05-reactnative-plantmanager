@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Image, Text, FlatList, StyleSheet } from "react-native";
+import { View, Image, Text, FlatList, Alert, StyleSheet } from "react-native";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-import { loadPlants, PlantProps } from "../libs/storage";
+import { loadPlants, PlantProps, removePlant } from "../libs/storage";
 
 import { Header } from "../components/Header";
 import { PlantCardSecondary } from "../components/PlantCardSecondary";
+import { Load } from "../components/Load";
 
 import waterdrop from "../assets/waterdrop.png";
 
@@ -36,7 +37,34 @@ export function MyPlants() {
     };
 
     loadStorageData();
-  });
+  }, []);
+
+  function handleRemove(plant: PlantProps) {
+    Alert.alert("Remover", `Deseja remover a ${plant.name}?`, [
+      {
+        text: "Não 🙏",
+        style: "cancel"
+      },
+      {
+        text: "Sim 😢",
+        onPress: async () => {
+          try {
+            await removePlant(plant.id);
+
+            setMyPlants((oldData) => (
+              oldData.filter((item) => item.id !== plant.id)
+            ));
+          } catch (error) {
+            Alert.alert("Não foi possível remover! 😢");
+          };
+        }
+      }
+    ]);
+  };
+
+  if (loading) {
+    return <Load />
+  };
 
   return (
     <View style={styles.container}>
@@ -55,10 +83,12 @@ export function MyPlants() {
           data={myPlants}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
-            <PlantCardSecondary data={item} />
+            <PlantCardSecondary
+              data={item}
+              handleRemove={() => handleRemove(item)}
+            />
           )}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flex: 1 }}
         />
       </View>
     </View>
@@ -71,7 +101,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 30,
-    paddingTop: 50,
     backgroundColor: colors.background
   },
   spotlight: {
